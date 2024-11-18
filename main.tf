@@ -1,33 +1,36 @@
-resource "aws_lb" "main" {
-  name               = local.lb_name
+resource "aws_lb" "alb" {
+  name               = "${var.env}-${var.alb_type}"
   internal           = var.internal
-  load_balancer_type = var.lb_type
-  security_groups    = [aws_security_group.main.id]
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.security_group.id]
   subnets            = var.subnets
-  tags               = merge(local.tags, { Name = "${var.env}-alb" })
+  tags = {
+    Environment = "${var.env}-${var.alb_type}"
+  }
 }
 
-resource "aws_security_group" "main" {
-  name        = local.sg_name
-  description = local.sg_name
+resource "aws_security_group" "security_group" {
+  name        = "${var.env}-${var.alb_type}-sg"
+  description = "${var.env}-${var.alb_type}-sg"
   vpc_id      = var.vpc_id
-  tags        = merge(local.tags, { Name = local.sg_name })
 
   ingress {
-    description = "APP"
-    from_port   = var.sg_port
-    to_port     = var.sg_port
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = var.sg_ingress_cidr
+    cidr_blocks = [var.alb_sg_allow_cidr]
   }
 
   egress {
-    from_port        = 0
-    to_port          = 0
-    protocol         = "-1"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
+  tags = {
+    Name = "${var.env}-${var.alb_type}-sg"
+  }
 }
 
