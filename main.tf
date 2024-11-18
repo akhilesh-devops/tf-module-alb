@@ -2,33 +2,24 @@ resource "aws_lb" "main" {
   name               = "${var.env}-alb"
   internal           = var.internal
   load_balancer_type = var.lb_type
-  security_groups    = [aws_security_group.lb_sg.id]
-  subnets            = [for subnet in aws_subnet.public : subnet.id]
+  security_groups    = [aws_security_group.main.id]
+  subnets            = var.subnets
 
-  enable_deletion_protection = true
-
-  access_logs {
-    bucket  = aws_s3_bucket.lb_logs.id
-    prefix  = "test-lb"
-    enabled = true
-  }
-
-  tags = {
-    Environment = "production"
-  }
+  tags        = merge(local.tags, {Name = "${var.env}-alb"})
 }
 
 resource "aws_security_group" "main" {
   name        = "${var.env}-alb-sg"
   description = "${var.env}-alb-sg"
   vpc_id      = var.vpc_id
+  tags        = merge(local.tags, {Name = "${var.env}-alb-sg"})
 
   ingress {
     description = "TLS from VPC"
-    from_port   = 443
-    to_port     = 443
+    from_port   = var.sg_port
+    to_port     = var.sg_port
     protocol    = "tcp"
-    cidr_blocks = aws_vpc.main.cidr_block
+    cidr_blocks = var.sg_ingress_cidr
   }
 
   egress {
@@ -38,7 +29,5 @@ resource "aws_security_group" "main" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
-    Name = "allow_tls"
-  }
+
 }
